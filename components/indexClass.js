@@ -6,7 +6,6 @@ import useSWR from 'swr'
 import Router from 'next/router'
 import fetch from 'isomorphic-unfetch'
 import Loginform from './LoginForm';
-import GitImport from './gitImport';
 import Link from 'next/link'
 
 function Home() {
@@ -29,13 +28,3 @@ function Home() {
   }
   
   export default Home;
-
-
-  //<p>Welcome {data.email}!</p>
-    //         <button
-    //           onClick={() => {
-    //             cookie.remove('token');
-    //             revalidate();
-    //           }}>
-    //           Logout
-    //         </button>

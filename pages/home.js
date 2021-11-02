@@ -2,8 +2,7 @@ import Head from 'next/head'
 import Loginform from '../components/LoginForm'
 import Router from 'next/router'
 import checkCookies from '../components/checkCookies'
-import SketchPad from '../old_components/sketchpad'
-import ToolBar from '../components/toolbar'
+import Toolbar   from '../components/toolbar'
 import Canvas from '../components/canvas'
 
 
@@ -21,8 +20,8 @@ export default function Home() {
     } else {
         return(
             <>
-            <ToolBar />
-            <Canvas />
+            <Toolbar />
+            {/* <Canvas /> */}
             </>
         )
     }

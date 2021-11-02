@@ -50,7 +50,7 @@ export default async(req, res) => {
                             const token = jwt.sign(
                                 {userId: user.userId, email: user.email},
                                 jwtSecret,
-                                {expiresIn: 3000}, // 50 min 
+                                {expiresIn: 300000}, // 50 min 
                             )
                             //console.log(token) //finish implementing the jwt token validation
                              res.status(200).json({token})
