@@ -45,15 +45,17 @@ export default function Toolbar() {
         canv.add(circle)
     }
     //creates a line and adds it to the canvas
-    const createLine = canv => {
+    const createLine = points => {
         const line = new fabric.Line(
-            [50, 10, 200, 150], //[x-axis,y-axis, length, rotation]
+            points, //[x-axis,y-axis, length, rotation]
             {
                 fill: 'red',
                 stroke: 'red',
-                strokeWidth: 5
+                strokeWidth: 5,
+                originX: 'center',
+                originY: 'center'
             })
-        canv.add(line)
+        return line
 
     }
     // function that creates and positions the connection controls
@@ -66,7 +68,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseDownHandler: isOverConnection,
+            mouseDownHandler: drawConnection,
         }
 
         const rightConnection = {
@@ -76,19 +78,17 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseDownHandler: isOverConnection,
+            mouseDownHandler: drawConnection,
         }
 
         const bottomConnection = {
             x: 0.0,
             y: 0.6,
-            // offsetX: 16,
-            // offsetY: -16,
             cursorStyle: 'pointer',
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseDownHandler: isOverConnection,
+            mouseDownHandler: drawConnection,
         }
 
         const topConnection = {
@@ -98,7 +98,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseDownHandler: isOverConnection,
+            mouseDownHandler: drawConnection,
         }
 
         fabric.Object.prototype.controls.rightConnection = new fabric.Control(rightConnection)
@@ -108,7 +108,7 @@ export default function Toolbar() {
 
     }
     //function that checks if the pointer is in the range of the connector coords box
-     const inRange = (point, polygon) => {
+    const inRange = (point, polygon) => {
 
         var x = point[0], y = point[1];
 
@@ -212,19 +212,59 @@ export default function Toolbar() {
             })
         return connectionLine
     }
+    //function that returns the corner's coords needed to draw the line that the user selected
+    const returnConnectorSelected = (activeObject) => {
+        const objectSelected = activeObject.__corner
 
+        let mainCoords = activeObject.calcCoords()
 
+        let rightConnectorCenterPoints2 = [mainCoords.rightConnection.x, mainCoords.rightConnection.y, mainCoords.rightConnection.x, mainCoords.rightConnection.y]
+        let leftConnectorCenterPoints2 = [mainCoords.leftConnection.x, mainCoords.leftConnection.y, mainCoords.leftConnection.x, mainCoords.leftConnection.y]
+        let bottomConnectorCenterPoints2 = [mainCoords.bottomConnection.x, mainCoords.bottomConnection.y, mainCoords.bottomConnection.x, mainCoords.bottomConnection.y]
+        let topConnectorCenterPoints2 = [mainCoords.topConnection.x, mainCoords.topConnection.y, mainCoords.topConnection.x, mainCoords.topConnection.y]
 
-    const moveShapeUpdateConnectorCoords = () => {
-        const activeObject = canvas.getActiveObject()
-        canvas.on('object:moving', function(options){
-            console.log('moving')
-        })
-
-
+        switch (objectSelected) {
+            case 'leftConnection':
+                return leftConnectorCenterPoints2
+                break;
+            case 'rightConnection':
+                return rightConnectorCenterPoints2;
+                break;
+            case 'topConnection':
+                return topConnectorCenterPoints2;
+                break;
+            case 'bottomConnection':
+                return bottomConnectorCenterPoints2;
+                break;
+            default:
+                console.log('no direction found');
+        }
     }
 
-     const createConnection = (canv, options) => {
+
+    const drawConnection = () => {
+        let isDown = true
+
+        const activeObject = canvas.getActiveObject() //sets the active object
+
+        const cornerSelected = returnConnectorSelected(activeObject) // gets the coords of the corner that was selected
+
+        let connectionLine = createLine(cornerSelected) //returns a connectionLine that was drawn 
+
+        canvas.on('mouse:move', function (options) {
+            if (!isDown) return;
+            canvas.add(connectionLine)
+            var pointers = canvas.getPointer(options.e);
+            connectionLine.set({ x2: pointers.x, y2: pointers.y });
+        })
+
+        canvas.on('mouse:up', function (options) {
+            //TODO: maintain the lines but reset the controls to get back the original sized ones
+            isDown = false
+        })
+    }
+
+    const createConnection = (canv, options) => {
         const activeObject = canvas.getActiveObject()
         if (activeObject == null) return;
         newControls()
@@ -240,59 +280,6 @@ export default function Toolbar() {
             mr: false
         })
 
-        var connectionLine, isDown;
-
-        canvas.on('mouse:down', function (options) {
-            isDown = true
-            console.log('options', options)
-            let pointer = canvas.getPointer(options.e) //pointer coords object
-            var points = [pointer.x, pointer.y, pointer.x, pointer.y] //pointer coords
-
-            if (options.target == null) { //return if the user doesn't click on a shape
-                return
-            }
-
-            let rightConnector = normalizeBorderPoints(options, 'right') //array of right connector coords
-            let leftConnector = normalizeBorderPoints(options, 'left')//array of left connector coords
-            let topConnector = normalizeBorderPoints(options, 'top') //array of top connector coords
-            let bottomConnector = normalizeBorderPoints(options, 'bottom')//array of bottom connector coords
-
-            let rightConnectorCenterPoints = returnConnectorCenterPoints(options, 'right')
-            let leftConnectorCenterPoints = returnConnectorCenterPoints(options, 'left')
-            let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
-            let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
-
-            let arrayOfConnectors = [rightConnector, leftConnector, topConnector, bottomConnector]
-
-            let arrayOfConnectorCenterPoints = [rightConnectorCenterPoints, leftConnectorCenterPoints, topConnectorCenterPoints, bottomConnectorCenterPoints]
-
-            console.log(canvas)
-
-            for (var i = 0; i < arrayOfConnectors.length; i++) {
-                if (inRange([points[0], points[1]], arrayOfConnectors[i]) == true) {
-                    console.log('its in range!')
-                    let connectionLine = drawLineFromConnector(arrayOfConnectorCenterPoints[i]) //returns a connectionLine that was drawn            
-                    canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
-                    canvas.on('mouse:move', function (o) {
-                        if (!isDown) return;
-                        var pointer = canvas.getPointer(o.e);
-                        connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                        canvas.on('mouse:up', function(options){
-                            console.log('mouseup')
-
-
-                        })
-                        canvas.requestRenderAll();
-                    })
-                break
-                }
-            }
-        });
-
-        canvas.on('mouse:up', function (options) {
-            isDown = false
-
-        })
         canvas.renderAll()
     }
 
@@ -400,3 +387,60 @@ export default function Toolbar() {
             // }else {
             //     console.log('its not in range!')
             // }
+
+
+
+
+                    // let rightConnector = normalizeBorderPoints(options, 'right') //array of right connector coords
+        // let leftConnector = normalizeBorderPoints(options, 'left')//array of left connector coords
+        // let topConnector = normalizeBorderPoints(options, 'top') //array of top connector coords
+        // let bottomConnector = normalizeBorderPoints(options, 'bottom')//array of bottom connector coords
+
+        // let rightConnectorCenterPoints = returnConnectorCenterPoints(options, 'right')
+        // let leftConnectorCenterPoints = returnConnectorCenterPoints(options, 'left')
+        // let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
+        // let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
+
+        // canvas.on('mouse:down', function (options) {
+
+//old simplified version of the code above which identified where the user clicked, checked if it was in the connector box and then draw a line - couldln't get the lines to stick though 
+        //     isDown = true
+        //     console.log('options', options)
+        //     let pointer = canvas.getPointer(options.e) //pointer coords object
+        //     var points = [pointer.x, pointer.y, pointer.x, pointer.y] //pointer coords
+
+        //     if (options.target == null) { //return if the user doesn't click on a shape
+        //         return
+        //     }
+
+        //     let rightConnector = normalizeBorderPoints(options, 'right') //array of right connector coords
+        //     let leftConnector = normalizeBorderPoints(options, 'left')//array of left connector coords
+        //     let topConnector = normalizeBorderPoints(options, 'top') //array of top connector coords
+        //     let bottomConnector = normalizeBorderPoints(options, 'bottom')//array of bottom connector coords
+
+        //     let rightConnectorCenterPoints = returnConnectorCenterPoints(options, 'right')
+        //     let leftConnectorCenterPoints = returnConnectorCenterPoints(options, 'left')
+        //     let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
+        //     let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
+
+        //     let arrayOfConnectors = [rightConnector, leftConnector, topConnector, bottomConnector]
+
+        //     let arrayOfConnectorCenterPoints = [rightConnectorCenterPoints, leftConnectorCenterPoints, topConnectorCenterPoints, bottomConnectorCenterPoints]
+
+        //     for (var i = 0; i < arrayOfConnectors.length; i++) {
+        //         if (inRange([points[0], points[1]], arrayOfConnectors[i]) == true) {
+        //             console.log('its in range!')
+        //             // let connectionLine = drawLineFromConnector(arrayOfConnectorCenterPoints[i]) //returns a connectionLine that was drawn            
+        //             // canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+        //             canvas.on('mouse:move', function (o) {
+        //                 if (!isDown) return;
+        //                 var pointer = canvas.getPointer(o.e);
+        //                 connectionLine.set({ x2: pointer.x, y2: pointer.y });
+        //                 canvas.on('mouse:up', function(options){
+        //                     return
+        //                 })
+        //                 canvas.renderAll();
+        //             })
+        //         }
+        //     }
+        // });
