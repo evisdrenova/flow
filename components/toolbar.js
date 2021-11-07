@@ -13,7 +13,7 @@ export default function Toolbar() {
             preserveObjectStacking: true
         })
     )
-
+        //intializes and mounts the canvas
     useEffect(() => {
         setCanvas(initCanvas());
     }, []);
@@ -30,10 +30,6 @@ export default function Toolbar() {
             cornerStyle: 'rect',
             transparentCorners: false
         });
-
-        rect.on('selected', function (options) {
-            console.log('rectangle is clicked')
-        })
 
         canv.add(rect);
     }
@@ -70,7 +66,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseUpHandler: createConn,
+            //mouseDownHandler: isOverConnection,
         }
 
         const rightConnection = {
@@ -80,7 +76,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseUpHandler: createConn,
+            //mouseDownHandler: isOverConnection,
         }
 
         const bottomConnection = {
@@ -92,7 +88,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseUpHandler: createConn,
+            //mouseDownHandler: isOverConnection,
         }
 
         const topConnection = {
@@ -102,7 +98,7 @@ export default function Toolbar() {
             cornerSize: 24,
             cornerColor: 'green',
             cornerStyle: 'circle',
-            //mouseUpHandler: createConn,
+            //mouseDownHandler: isOverConnection,
         }
 
         fabric.Object.prototype.controls.rightConnection = new fabric.Control(rightConnection)
@@ -111,19 +107,116 @@ export default function Toolbar() {
         fabric.Object.prototype.controls.bottomConnection = new fabric.Control(bottomConnection)
 
     }
+    //function that checks if the pointer is in the range of the connector coords box
+    const inRange = (point, polygon) => {
 
-    // const createConn = () => {
-    //     const activeObject = canvas.getActiveObject()
-    //     console.log(activeObject)
-    //     canvas.requestRenderAll()
-    // }
+        var x = point[0], y = point[1];
+
+        var inside = false;
+        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            var xi = polygon[i][0], yi = polygon[i][1];
+            var xj = polygon[j][0], yj = polygon[j][1];
+
+            var intersect = ((yi > y) != (yj > y))
+                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
+    };
+
+    //function that goes through options object and returns just the corners and expands the corners to account from more flexiblity in where the user picks 
+    const normalizeBorderPoints = (options, connector) => {
+        let rightConnectorCorners = [
+            [options.target.oCoords.rightConnection.corner.bl.x-10, options.target.oCoords.rightConnection.corner.bl.y+10],
+            [options.target.oCoords.rightConnection.corner.br.x+10, options.target.oCoords.rightConnection.corner.br.y+10],
+            [options.target.oCoords.rightConnection.corner.tl.x-10, options.target.oCoords.rightConnection.corner.tl.y-10],
+            [options.target.oCoords.rightConnection.corner.tr.x+10, options.target.oCoords.rightConnection.corner.tr.y-10]
+        ]
+        let leftConnectorCorners = [
+            [options.target.oCoords.leftConnection.corner.bl.x-10, options.target.oCoords.leftConnection.corner.bl.y+10],
+            [options.target.oCoords.leftConnection.corner.br.x+10, options.target.oCoords.leftConnection.corner.br.y+10],
+            [options.target.oCoords.leftConnection.corner.tl.x-10, options.target.oCoords.leftConnection.corner.tl.y-10],
+            [options.target.oCoords.leftConnection.corner.tr.x+10, options.target.oCoords.leftConnection.corner.tr.y-10]
+        ]
+
+        let topConnectorCorners = [
+            [options.target.oCoords.topConnection.corner.bl.x-10, options.target.oCoords.topConnection.corner.bl.y+10],
+            [options.target.oCoords.topConnection.corner.br.x+10, options.target.oCoords.topConnection.corner.br.y+10],
+            [options.target.oCoords.topConnection.corner.tl.x-10, options.target.oCoords.topConnection.corner.tl.y-10],
+            [options.target.oCoords.topConnection.corner.tr.x+10, options.target.oCoords.topConnection.corner.tr.y-10]
+        ]
+
+        let bottomConnectorCorners = [
+            [options.target.oCoords.bottomConnection.corner.bl.x-10, options.target.oCoords.bottomConnection.corner.bl.y+10],
+            [options.target.oCoords.bottomConnection.corner.br.x+10, options.target.oCoords.bottomConnection.corner.br.y+10],
+            [options.target.oCoords.bottomConnection.corner.tl.x-10, options.target.oCoords.bottomConnection.corner.tl.y-10],
+            [options.target.oCoords.bottomConnection.corner.tr.x+10, options.target.oCoords.bottomConnection.corner.tr.y-10]
+        ]
+
+        switch (connector) {
+            case 'right':
+                return rightConnectorCorners
+                break;
+            case 'left':
+                return leftConnectorCorners;
+                break;
+            case 'top':
+                return topConnectorCorners;
+                break;
+            case 'bottom':
+                return bottomConnectorCorners;
+            default:
+                console.log('Couldn\'t recognize direction')
+        }
+    }
+
+    const returnConnectorCenterPoints = (options, connector) => {
+
+        let rightConnectorCenterPoints = [options.target.oCoords.rightConnection.x, options.target.oCoords.rightConnection.y, options.target.oCoords.rightConnection.x, options.target.oCoords.rightConnection.y]
+
+        let leftConnectorCenterPoints = [options.target.oCoords.leftConnection.x, options.target.oCoords.leftConnection.y, options.target.oCoords.leftConnection.x, options.target.oCoords.leftConnection.y]
+
+        let topConnectorCenterPoints = [options.target.oCoords.topConnection.x, options.target.oCoords.topConnection.y, options.target.oCoords.topConnection.x, options.target.oCoords.topConnection.y]
+
+        let bottomConnectorCenterPoints = [options.target.oCoords.bottomConnection.x, options.target.oCoords.bottomConnection.y, options.target.oCoords.bottomConnection.x, options.target.oCoords.bottomConnection.y]
+
+        switch (connector) {
+            case 'right':
+                return rightConnectorCenterPoints
+                break;
+            case 'left':
+                return leftConnectorCenterPoints
+                break;
+            case 'top':
+                return topConnectorCenterPoints
+                break;
+            case 'bottom':
+                return bottomConnectorCenterPoints
+            default:
+                console.log('Couldn\'t recognize direction')
+        }
+
+    }
+    //function that draws the line originating from the center of the connector box
+    const drawLineFromConnector = (connectorCenterPoints) => {
+
+        const connectionLine = new fabric.Line(
+            connectorCenterPoints,
+            {
+                fill: 'red',
+                stroke: 'red',
+                strokeWidth: 5,
+                originX: 'center',
+                originY: 'center'
+            })
+            return connectionLine
+    }
 
 
-
-
-    //creates a connection
     const createConnection = (canv, options) => {
         const activeObject = canvas.getActiveObject()
+        if (activeObject == null) return;
         newControls()
         activeObject.setControlsVisibility({
             bl: false,
@@ -137,38 +230,70 @@ export default function Toolbar() {
             mr: false
         })
 
-
         var connectionLine, isDown;
         canvas.on('mouse:down', function (options) {
             isDown = true
-            console.log(options)
-            let pointer = canvas.getPointer(options.e)
-            console.log(pointer)
-            var points = [pointer.x, pointer.y, pointer.x, pointer.y]
+            console.log('options', options)
+            let pointer = canvas.getPointer(options.e) //pointer coords object
 
-            connectionLine = new fabric.Line(
-                coords,
-                {
-                    fill: 'red',
-                    stroke: 'red',
-                    strokeWidth: 5
-                })
+            var points = [pointer.x, pointer.y, pointer.x, pointer.y] //pointer coords
+            let rightConnector = normalizeBorderPoints(options, 'right') //array of right connector coords
+            let leftConnector = normalizeBorderPoints(options, 'left')//array of left connector coords
+            let topConnector = normalizeBorderPoints(options, 'top') //array of top connector coords
+            let bottomConnector = normalizeBorderPoints(options, 'bottom')//array of bottom connector coords
 
-            let coords = points
-            let coords2 = [321.1, 200.5, 100, 150]
-            canvas.add(connectionLine)
+            let rightConnectorCenterPoints = returnConnectorCenterPoints(options, 'right')
+            let leftConnectorCenterPoints = returnConnectorCenterPoints(options, 'left')
+            let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
+            let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
+            
+            let connectionLine = drawLineFromConnector(rightConnectorCenterPoints) //returns a connectionLine that was drawn            
+            canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+
+            if (inRange([points[0], points[1]], rightConnector) == true) {
+                    console.log('its in range!')
+                    canvas.on('mouse:move', function (o) {
+                        if (!isDown) return;
+                        var pointer = canvas.getPointer(o.e);
+                        connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                        canvas.renderAll();
+                    })
+            } else {
+                console.log('its not in range!')
+            }
+
         });
 
-        canvas.on('mouse:move', function (o) {
-            if(!isDown) return;
-            var pointer = canvas.getPointer(o.e);
-            connectionLine.set({ x2: pointer.x, y2: pointer.y });
-            canvas.renderAll();
-
-            canvas.on('mouse:up', function (options) {
-                isDown = false
-            })
+        canvas.on('mouse:up', function (options) {
+            isDown = false
         })
+        canvas.requestRenderAll()
+
+    }
+
+    return (
+        <>
+            <div id="toolBarOutline" className={styles.toolbar}>
+                <div id='squareButton' className={styles.button}>
+                    <button id='squareButton' type='button' onClick={() => createRect(canvas)}>Square</button>
+                </div>
+                <div id='circleButton' className={styles.button}>
+                    <button id='circleButton' type='button' onClick={() => createCircle(canvas)}>Circle</button>
+                </div>
+                <div id='lineButton' className={styles.button}>
+                    <button id='lineButton' type='button' onClick={() => createLine(canvas)}>Line</button>
+                </div>
+                <div id='connectionButton' className={styles.button}>
+                    <button id='connectionButton' type='button' onClick={() => createConnection(canvas)}>Connection</button>
+                </div>
+            </div>
+            <div>
+                <canvas id='canvas' />
+            </div>
+        </>
+    )
+}
+
 
 
         //some fun code to create a connection point and then update it's coordinates every time the box moves so that it always stays in the same position
@@ -201,30 +326,3 @@ export default function Toolbar() {
         //     connectionPoint.set('left', xcoord)
         // })
 
-
-        canvas.requestRenderAll()
-
-    }
-
-    return (
-        <>
-            <div id="toolBarOutline" className={styles.toolbar}>
-                <div id='squareButton' className={styles.button}>
-                    <button id='squareButton' type='button' onClick={() => createRect(canvas)}>Square</button>
-                </div>
-                <div id='circleButton' className={styles.button}>
-                    <button id='circleButton' type='button' onClick={() => createCircle(canvas)}>Circle</button>
-                </div>
-                <div id='lineButton' className={styles.button}>
-                    <button id='lineButton' type='button' onClick={() => createLine(canvas)}>Line</button>
-                </div>
-                <div id='connectionButton' className={styles.button}>
-                    <button id='connectionButton' type='button' onClick={() => createConnection(canvas)}>Connection</button>
-                </div>
-            </div>
-            <div>
-                <canvas id='canvas' />
-            </div>
-        </>
-    )
-}
