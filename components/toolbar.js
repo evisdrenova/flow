@@ -20,6 +20,9 @@ export default function Toolbar() {
 
     //creates a rectangle and adds it to the canvas
     const createRect = canv => {
+
+        const uuid = require('uuid').v4
+
         const rect = new fabric.Rect({
             top: 100,
             left: 100,
@@ -223,18 +226,36 @@ export default function Toolbar() {
         let bottomConnectorCenterPoints2 = [mainCoords.bottomConnection.x, mainCoords.bottomConnection.y, mainCoords.bottomConnection.x, mainCoords.bottomConnection.y]
         let topConnectorCenterPoints2 = [mainCoords.topConnection.x, mainCoords.topConnection.y, mainCoords.topConnection.x, mainCoords.topConnection.y]
 
+        let returnObj;
+
         switch (objectSelected) {
             case 'leftConnection':
-                return leftConnectorCenterPoints2
+                return returnObj =
+                {
+                    corner: 'left',
+                    points: leftConnectorCenterPoints2
+                }
                 break;
             case 'rightConnection':
-                return rightConnectorCenterPoints2;
+                return returnObj =
+                {
+                    corner: 'right',
+                    points: rightConnectorCenterPoints2
+                }
                 break;
             case 'topConnection':
-                return topConnectorCenterPoints2;
+                return returnObj =
+                {
+                    corner: 'top',
+                    points: topConnectorCenterPoints2
+                }
                 break;
             case 'bottomConnection':
-                return bottomConnectorCenterPoints2;
+                return returnObj =
+                {
+                    corner: 'bottom',
+                    points: bottomConnectorCenterPoints2
+                }
                 break;
             default:
                 console.log('no direction found');
@@ -247,9 +268,11 @@ export default function Toolbar() {
 
         const activeObject = canvas.getActiveObject() //sets the active object
 
+        const rect_corners = activeObject.calcCoords()
+
         const cornerSelected = returnConnectorSelected(activeObject) // gets the coords of the corner that was selected
 
-        let connectionLine = createLine(cornerSelected) //returns a connectionLine that was drawn 
+        let connectionLine = createLine(cornerSelected.points) //returns a connectionLine that was drawn 
 
         canvas.on('mouse:move', function (options) {
             if (!isDown) return;
@@ -261,7 +284,20 @@ export default function Toolbar() {
         canvas.on('mouse:up', function (options) {
             //TODO: maintain the lines but reset the controls to get back the original sized ones
             isDown = false
+
         })
+
+        //everytime the object moves it updates the beginning of the line's coordinates so it sticks to the center of the connector
+        canvas.on('object:moving', function (options) {
+
+            console.log('corner selected', cornerSelected)
+            const cornerCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
+            let cornerCoordsX = cornerCoords[0]
+            let cornerCoordsY = cornerCoords[1]
+            connectionLine.set({ x1: cornerCoordsX, y1: cornerCoordsY })
+            canvas.requestRenderAll()
+        })
+
     }
 
     const createConnection = (canv, options) => {
