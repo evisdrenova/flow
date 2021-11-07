@@ -13,7 +13,7 @@ export default function Toolbar() {
             preserveObjectStacking: true
         })
     )
-        //intializes and mounts the canvas
+    //intializes and mounts the canvas
     useEffect(() => {
         setCanvas(initCanvas());
     }, []);
@@ -128,30 +128,30 @@ export default function Toolbar() {
     //function that goes through options object and returns just the corners and expands the corners to account from more flexiblity in where the user picks 
     const normalizeBorderPoints = (options, connector) => {
         let rightConnectorCorners = [
-            [options.target.oCoords.rightConnection.corner.bl.x-10, options.target.oCoords.rightConnection.corner.bl.y+10],
-            [options.target.oCoords.rightConnection.corner.br.x+10, options.target.oCoords.rightConnection.corner.br.y+10],
-            [options.target.oCoords.rightConnection.corner.tl.x-10, options.target.oCoords.rightConnection.corner.tl.y-10],
-            [options.target.oCoords.rightConnection.corner.tr.x+10, options.target.oCoords.rightConnection.corner.tr.y-10]
+            [options.target.oCoords.rightConnection.corner.bl.x - 10, options.target.oCoords.rightConnection.corner.bl.y + 10],
+            [options.target.oCoords.rightConnection.corner.br.x + 10, options.target.oCoords.rightConnection.corner.br.y + 10],
+            [options.target.oCoords.rightConnection.corner.tl.x - 10, options.target.oCoords.rightConnection.corner.tl.y - 10],
+            [options.target.oCoords.rightConnection.corner.tr.x + 10, options.target.oCoords.rightConnection.corner.tr.y - 10]
         ]
         let leftConnectorCorners = [
-            [options.target.oCoords.leftConnection.corner.bl.x-10, options.target.oCoords.leftConnection.corner.bl.y+10],
-            [options.target.oCoords.leftConnection.corner.br.x+10, options.target.oCoords.leftConnection.corner.br.y+10],
-            [options.target.oCoords.leftConnection.corner.tl.x-10, options.target.oCoords.leftConnection.corner.tl.y-10],
-            [options.target.oCoords.leftConnection.corner.tr.x+10, options.target.oCoords.leftConnection.corner.tr.y-10]
+            [options.target.oCoords.leftConnection.corner.bl.x - 10, options.target.oCoords.leftConnection.corner.bl.y + 10],
+            [options.target.oCoords.leftConnection.corner.br.x + 10, options.target.oCoords.leftConnection.corner.br.y + 10],
+            [options.target.oCoords.leftConnection.corner.tl.x - 10, options.target.oCoords.leftConnection.corner.tl.y - 10],
+            [options.target.oCoords.leftConnection.corner.tr.x + 10, options.target.oCoords.leftConnection.corner.tr.y - 10]
         ]
 
         let topConnectorCorners = [
-            [options.target.oCoords.topConnection.corner.bl.x-10, options.target.oCoords.topConnection.corner.bl.y+10],
-            [options.target.oCoords.topConnection.corner.br.x+10, options.target.oCoords.topConnection.corner.br.y+10],
-            [options.target.oCoords.topConnection.corner.tl.x-10, options.target.oCoords.topConnection.corner.tl.y-10],
-            [options.target.oCoords.topConnection.corner.tr.x+10, options.target.oCoords.topConnection.corner.tr.y-10]
+            [options.target.oCoords.topConnection.corner.bl.x - 10, options.target.oCoords.topConnection.corner.bl.y + 10],
+            [options.target.oCoords.topConnection.corner.br.x + 10, options.target.oCoords.topConnection.corner.br.y + 10],
+            [options.target.oCoords.topConnection.corner.tl.x - 10, options.target.oCoords.topConnection.corner.tl.y - 10],
+            [options.target.oCoords.topConnection.corner.tr.x + 10, options.target.oCoords.topConnection.corner.tr.y - 10]
         ]
 
         let bottomConnectorCorners = [
-            [options.target.oCoords.bottomConnection.corner.bl.x-10, options.target.oCoords.bottomConnection.corner.bl.y+10],
-            [options.target.oCoords.bottomConnection.corner.br.x+10, options.target.oCoords.bottomConnection.corner.br.y+10],
-            [options.target.oCoords.bottomConnection.corner.tl.x-10, options.target.oCoords.bottomConnection.corner.tl.y-10],
-            [options.target.oCoords.bottomConnection.corner.tr.x+10, options.target.oCoords.bottomConnection.corner.tr.y-10]
+            [options.target.oCoords.bottomConnection.corner.bl.x - 10, options.target.oCoords.bottomConnection.corner.bl.y + 10],
+            [options.target.oCoords.bottomConnection.corner.br.x + 10, options.target.oCoords.bottomConnection.corner.br.y + 10],
+            [options.target.oCoords.bottomConnection.corner.tl.x - 10, options.target.oCoords.bottomConnection.corner.tl.y - 10],
+            [options.target.oCoords.bottomConnection.corner.tr.x + 10, options.target.oCoords.bottomConnection.corner.tr.y - 10]
         ]
 
         switch (connector) {
@@ -210,7 +210,7 @@ export default function Toolbar() {
                 originX: 'center',
                 originY: 'center'
             })
-            return connectionLine
+        return connectionLine
     }
 
 
@@ -246,19 +246,51 @@ export default function Toolbar() {
             let leftConnectorCenterPoints = returnConnectorCenterPoints(options, 'left')
             let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
             let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
-            
-            let connectionLine = drawLineFromConnector(rightConnectorCenterPoints) //returns a connectionLine that was drawn            
-            canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
 
             if (inRange([points[0], points[1]], rightConnector) == true) {
-                    console.log('its in range!')
-                    canvas.on('mouse:move', function (o) {
-                        if (!isDown) return;
-                        var pointer = canvas.getPointer(o.e);
-                        connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                        canvas.renderAll();
-                    })
-            } else {
+                console.log('its in range!')
+                let connectionLine = drawLineFromConnector(rightConnectorCenterPoints) //returns a connectionLine that was drawn            
+                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+                canvas.on('mouse:move', function (o) {
+                    if (!isDown) return;
+                    var pointer = canvas.getPointer(o.e);
+                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                    canvas.renderAll();
+                })
+            } else if(inRange([points[0], points[1]], leftConnector) == true) {
+                console.log('its in range!')
+                let connectionLine = drawLineFromConnector(leftConnectorCenterPoints) //returns a connectionLine that was drawn            
+                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+                canvas.on('mouse:move', function (o) {
+                    if (!isDown) return;
+                    var pointer = canvas.getPointer(o.e);
+                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                    canvas.renderAll();
+                })
+
+            } else if(inRange([points[0], points[1]], topConnector) == true) {
+                console.log('its in range!')
+                let connectionLine = drawLineFromConnector(topConnectorCenterPoints) //returns a connectionLine that was drawn            
+                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+                canvas.on('mouse:move', function (o) {
+                    if (!isDown) return;
+                    var pointer = canvas.getPointer(o.e);
+                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                    canvas.renderAll();
+                })
+
+            } else if(inRange([points[0], points[1]], bottomConnector) == true){
+                console.log('its in range!')
+                let connectionLine = drawLineFromConnector(bottomConnectorCenterPoints) //returns a connectionLine that was drawn            
+                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+                canvas.on('mouse:move', function (o) {
+                    if (!isDown) return;
+                    var pointer = canvas.getPointer(o.e);
+                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                    canvas.renderAll();
+                })
+              
+            }else {
                 console.log('its not in range!')
             }
 
