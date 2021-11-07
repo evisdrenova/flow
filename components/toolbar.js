@@ -108,7 +108,7 @@ export default function Toolbar() {
 
     }
     //function that checks if the pointer is in the range of the connector coords box
-    const inRange = (point, polygon) => {
+     const inRange = (point, polygon) => {
 
         var x = point[0], y = point[1];
 
@@ -214,7 +214,17 @@ export default function Toolbar() {
     }
 
 
-    const createConnection = (canv, options) => {
+
+    const moveShapeUpdateConnectorCoords = () => {
+        const activeObject = canvas.getActiveObject()
+        canvas.on('object:moving', function(options){
+            console.log('moving')
+        })
+
+
+    }
+
+     const createConnection = (canv, options) => {
         const activeObject = canvas.getActiveObject()
         if (activeObject == null) return;
         newControls()
@@ -231,12 +241,17 @@ export default function Toolbar() {
         })
 
         var connectionLine, isDown;
+
         canvas.on('mouse:down', function (options) {
             isDown = true
             console.log('options', options)
             let pointer = canvas.getPointer(options.e) //pointer coords object
-
             var points = [pointer.x, pointer.y, pointer.x, pointer.y] //pointer coords
+
+            if (options.target == null) { //return if the user doesn't click on a shape
+                return
+            }
+
             let rightConnector = normalizeBorderPoints(options, 'right') //array of right connector coords
             let leftConnector = normalizeBorderPoints(options, 'left')//array of left connector coords
             let topConnector = normalizeBorderPoints(options, 'top') //array of top connector coords
@@ -247,60 +262,38 @@ export default function Toolbar() {
             let topConnectorCenterPoints = returnConnectorCenterPoints(options, 'top')
             let bottomConnectorCenterPoints = returnConnectorCenterPoints(options, 'bottom')
 
-            if (inRange([points[0], points[1]], rightConnector) == true) {
-                console.log('its in range!')
-                let connectionLine = drawLineFromConnector(rightConnectorCenterPoints) //returns a connectionLine that was drawn            
-                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
-                canvas.on('mouse:move', function (o) {
-                    if (!isDown) return;
-                    var pointer = canvas.getPointer(o.e);
-                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                    canvas.renderAll();
-                })
-            } else if(inRange([points[0], points[1]], leftConnector) == true) {
-                console.log('its in range!')
-                let connectionLine = drawLineFromConnector(leftConnectorCenterPoints) //returns a connectionLine that was drawn            
-                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
-                canvas.on('mouse:move', function (o) {
-                    if (!isDown) return;
-                    var pointer = canvas.getPointer(o.e);
-                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                    canvas.renderAll();
-                })
+            let arrayOfConnectors = [rightConnector, leftConnector, topConnector, bottomConnector]
 
-            } else if(inRange([points[0], points[1]], topConnector) == true) {
-                console.log('its in range!')
-                let connectionLine = drawLineFromConnector(topConnectorCenterPoints) //returns a connectionLine that was drawn            
-                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
-                canvas.on('mouse:move', function (o) {
-                    if (!isDown) return;
-                    var pointer = canvas.getPointer(o.e);
-                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                    canvas.renderAll();
-                })
+            let arrayOfConnectorCenterPoints = [rightConnectorCenterPoints, leftConnectorCenterPoints, topConnectorCenterPoints, bottomConnectorCenterPoints]
 
-            } else if(inRange([points[0], points[1]], bottomConnector) == true){
-                console.log('its in range!')
-                let connectionLine = drawLineFromConnector(bottomConnectorCenterPoints) //returns a connectionLine that was drawn            
-                canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
-                canvas.on('mouse:move', function (o) {
-                    if (!isDown) return;
-                    var pointer = canvas.getPointer(o.e);
-                    connectionLine.set({ x2: pointer.x, y2: pointer.y });
-                    canvas.renderAll();
-                })
-              
-            }else {
-                console.log('its not in range!')
+            console.log(canvas)
+
+            for (var i = 0; i < arrayOfConnectors.length; i++) {
+                if (inRange([points[0], points[1]], arrayOfConnectors[i]) == true) {
+                    console.log('its in range!')
+                    let connectionLine = drawLineFromConnector(arrayOfConnectorCenterPoints[i]) //returns a connectionLine that was drawn            
+                    canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+                    canvas.on('mouse:move', function (o) {
+                        if (!isDown) return;
+                        var pointer = canvas.getPointer(o.e);
+                        connectionLine.set({ x2: pointer.x, y2: pointer.y });
+                        canvas.on('mouse:up', function(options){
+                            console.log('mouseup')
+
+
+                        })
+                        canvas.requestRenderAll();
+                    })
+                break
+                }
             }
-
         });
 
         canvas.on('mouse:up', function (options) {
             isDown = false
-        })
-        canvas.requestRenderAll()
 
+        })
+        canvas.renderAll()
     }
 
     return (
@@ -358,3 +351,52 @@ export default function Toolbar() {
         //     connectionPoint.set('left', xcoord)
         // })
 
+
+        //original line of code to draw the line from the connector
+
+         // if (inRange([points[0], points[1]], rightConnector) == true) {
+            //     console.log('its in range!')
+            //     let connectionLine = drawLineFromConnector(rightConnectorCenterPoints) //returns a connectionLine that was drawn            
+            //     canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+            //     canvas.on('mouse:move', function (o) {
+            //         if (!isDown) return;
+            //         var pointer = canvas.getPointer(o.e);
+            //         connectionLine.set({ x2: pointer.x, y2: pointer.y });
+            //         canvas.renderAll();
+            //     })
+            // } else if(inRange([points[0], points[1]], leftConnector) == true) {
+            //     console.log('its in range!')
+            //     let connectionLine = drawLineFromConnector(leftConnectorCenterPoints) //returns a connectionLine that was drawn            
+            //     canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+            //     canvas.on('mouse:move', function (o) {
+            //         if (!isDown) return;
+            //         var pointer = canvas.getPointer(o.e);
+            //         connectionLine.set({ x2: pointer.x, y2: pointer.y });
+            //         canvas.renderAll();
+            //     })
+
+            // } else if(inRange([points[0], points[1]], topConnector) == true) {
+            //     console.log('its in range!')
+            //     let connectionLine = drawLineFromConnector(topConnectorCenterPoints) //returns a connectionLine that was drawn            
+            //     canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+            //     canvas.on('mouse:move', function (o) {
+            //         if (!isDown) return;
+            //         var pointer = canvas.getPointer(o.e);
+            //         connectionLine.set({ x2: pointer.x, y2: pointer.y });
+            //         canvas.renderAll();
+            //     })
+
+            // } else if(inRange([points[0], points[1]], bottomConnector) == true){
+            //     console.log('its in range!')
+            //     let connectionLine = drawLineFromConnector(bottomConnectorCenterPoints) //returns a connectionLine that was drawn            
+            //     canvas.add(connectionLine) //adds the connectionLine that was rturned to the canvas
+            //     canvas.on('mouse:move', function (o) {
+            //         if (!isDown) return;
+            //         var pointer = canvas.getPointer(o.e);
+            //         connectionLine.set({ x2: pointer.x, y2: pointer.y });
+            //         canvas.renderAll();
+            //     })
+
+            // }else {
+            //     console.log('its not in range!')
+            // }
