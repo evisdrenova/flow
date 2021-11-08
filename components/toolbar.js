@@ -7,8 +7,8 @@ export default function Toolbar() {
 
     const initCanvas = () => (
         new fabric.Canvas('canvas', {
-            height: 500,
-            width: 500,
+            height: 700,
+            width: 700,
             backgroundColor: 'pink',
             preserveObjectStacking: true
         })
@@ -17,11 +17,8 @@ export default function Toolbar() {
     useEffect(() => {
         setCanvas(initCanvas());
     }, []);
-
     //creates a rectangle and adds it to the canvas
     const createRect = canv => {
-
-        const uuid = require('uuid').v4
 
         const rect = new fabric.Rect({
             top: 100,
@@ -31,10 +28,10 @@ export default function Toolbar() {
             fill: 'yellow',
             cornerColor: 'blue',
             cornerStyle: 'rect',
-            transparentCorners: false
+            transparentCorners: false,
         });
-
         canv.add(rect);
+        resetConnectors(rect)
     }
     //creates a circle and adds it to the canvas
     const createCircle = canv => {
@@ -61,7 +58,7 @@ export default function Toolbar() {
         return line
 
     }
-    // function that creates and positions the connection controls
+    //defines and positions the connection controls
     const newControls = () => {
 
         const leftConnection = {
@@ -104,13 +101,10 @@ export default function Toolbar() {
             mouseDownHandler: drawConnection,
         }
 
-        fabric.Object.prototype.controls.rightConnection = new fabric.Control(rightConnection)
-        fabric.Object.prototype.controls.leftConnection = new fabric.Control(leftConnection)
-        fabric.Object.prototype.controls.topConnection = new fabric.Control(topConnection)
-        fabric.Object.prototype.controls.bottomConnection = new fabric.Control(bottomConnection)
+        return { topConnection, bottomConnection, rightConnection, leftConnection }
 
     }
-    //function that checks if the pointer is in the range of the connector coords box
+    //checks if the pointer is in the range of the connector coords box
     const inRange = (point, polygon) => {
 
         var x = point[0], y = point[1];
@@ -126,9 +120,8 @@ export default function Toolbar() {
         }
 
         return inside;
-    };
-
-    //function that goes through options object and returns just the corners and expands the corners to account from more flexiblity in where the user picks 
+    }
+    //goes through options object and returns just the corners and expands the corners to account from more flexiblity in where the user picks 
     const normalizeBorderPoints = (options, connector) => {
         let rightConnectorCorners = [
             [options.target.oCoords.rightConnection.corner.bl.x - 10, options.target.oCoords.rightConnection.corner.bl.y + 10],
@@ -173,7 +166,7 @@ export default function Toolbar() {
                 console.log('Couldn\'t recognize direction')
         }
     }
-
+    //returns the center points of the customer connectors to be able to bind the line to the object
     const returnConnectorCenterPoints = (options, connector) => {
 
         let rightConnectorCenterPoints = [options.target.oCoords.rightConnection.x, options.target.oCoords.rightConnection.y, options.target.oCoords.rightConnection.x, options.target.oCoords.rightConnection.y]
@@ -201,8 +194,8 @@ export default function Toolbar() {
         }
 
     }
-    //function that draws the line originating from the center of the connector box
-    const drawLineFromConnector = (connectorCenterPoints) => {
+    //draws the line originating from the center of the connector box
+    const drawLineFromConnector = connectorCenterPoints => {
 
         const connectionLine = new fabric.Line(
             connectorCenterPoints,
@@ -215,8 +208,8 @@ export default function Toolbar() {
             })
         return connectionLine
     }
-    //function that returns the corner's coords needed to draw the line that the user selected
-    const returnConnectorSelected = (activeObject) => {
+    //returns the corner's coords needed to draw the line that the user selected
+    const returnConnectorSelected = activeObject => {
         const objectSelected = activeObject.__corner
 
         let mainCoords = activeObject.calcCoords()
@@ -261,49 +254,16 @@ export default function Toolbar() {
                 console.log('no direction found');
         }
     }
+    //renders the customer connections
+    const showConnectors = (activeObject) => {
 
+        const newConnectors = newControls()
 
-    const drawConnection = () => {
-        let isDown = true
+        fabric.Object.prototype.controls.rightConnection = new fabric.Control(newConnectors.rightConnection)
+        fabric.Object.prototype.controls.leftConnection = new fabric.Control(newConnectors.leftConnection)
+        fabric.Object.prototype.controls.topConnection = new fabric.Control(newConnectors.topConnection)
+        fabric.Object.prototype.controls.bottomConnection = new fabric.Control(newConnectors.bottomConnection)
 
-        const activeObject = canvas.getActiveObject() //sets the active object
-
-        const rect_corners = activeObject.calcCoords()
-
-        const cornerSelected = returnConnectorSelected(activeObject) // gets the coords of the corner that was selected
-
-        let connectionLine = createLine(cornerSelected.points) //returns a connectionLine that was drawn 
-
-        canvas.on('mouse:move', function (options) {
-            if (!isDown) return;
-            canvas.add(connectionLine)
-            var pointers = canvas.getPointer(options.e);
-            connectionLine.set({ x2: pointers.x, y2: pointers.y });
-        })
-
-        canvas.on('mouse:up', function (options) {
-            //TODO: maintain the lines but reset the controls to get back the original sized ones
-            isDown = false
-
-        })
-
-        //everytime the object moves it updates the beginning of the line's coordinates so it sticks to the center of the connector
-        canvas.on('object:moving', function (options) {
-
-            console.log('corner selected', cornerSelected)
-            const cornerCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
-            let cornerCoordsX = cornerCoords[0]
-            let cornerCoordsY = cornerCoords[1]
-            connectionLine.set({ x1: cornerCoordsX, y1: cornerCoordsY })
-            canvas.requestRenderAll()
-        })
-
-    }
-
-    const createConnection = (canv, options) => {
-        const activeObject = canvas.getActiveObject()
-        if (activeObject == null) return;
-        newControls()
         activeObject.setControlsVisibility({
             bl: false,
             br: false,
@@ -313,10 +273,87 @@ export default function Toolbar() {
             ml: false,
             mt: false,
             mb: false,
-            mr: false
+            mr: false,
+            rightConnection: true,
+            leftConnection: true,
+            topConnection: true,
+            bottomConnection: true
+        })
+    }
+    //resets the customer connectors to the original connections
+    const resetConnectors = activeObject => {
+
+        activeObject.setControlsVisibility({
+            bl: true,
+            br: true,
+            tl: true,
+            tr: true,
+            mtr: true,
+            ml: true,
+            mt: true,
+            mb: true,
+            mr: true,
+            rightConnection: false,
+            leftConnection: false,
+            topConnection: false,
+            bottomConnection: false
+        })
+    }
+    //TODO: updates the insertion coordinates for the lines when the user scales the shapes
+    const updateLineCoordsWhenObjectScales = () => {
+
+    }
+
+    //draws the connction line
+    const drawConnection = () => {
+
+        let isDown = true
+        const activeObject = canvas.getActiveObject() //sets the active object
+        const rect_corners = activeObject.calcCoords()
+        const cornerSelected = returnConnectorSelected(activeObject) // gets the coords of the corner that was selected
+        let connectionLine = createLine(cornerSelected.points) //returns a connectionLine that was drawn 
+
+        canvas.on('mouse:move', function (options) {
+            //whenever the mouse moves, update the end of the line coords to be the mouse pointer coords
+            if (!isDown) return;
+            canvas.add(connectionLine)
+            var pointers = canvas.getPointer(options.e);
+            connectionLine.set({ x2: pointers.x, y2: pointers.y });
         })
 
-        canvas.renderAll()
+        canvas.on('mouse:up', function (options) {
+            //maintains the lines but reset the controls to get back the original sized ones
+            isDown = false
+            resetConnectors(activeObject)
+            canvas.requestRenderAll()
+        })
+
+        //everytime the object moves it updates the beginning of the line's coordinates so it sticks to the center of the connector
+        canvas.on('object:moving', function (options) {
+            const connectorCenterCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
+            let connectorCenterCoordsX = connectorCenterCoords[0]
+            let connectorCenterCoordsY = connectorCenterCoords[1]
+            connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
+            canvas.requestRenderAll()
+        })
+    }
+    //handles the connection logic that shows the connectors
+    const createConnection = (canv, options) => {
+        const activeObject = canvas.getActiveObject()
+        if (activeObject == null) { //checks if the user has selected anything and if not returns, otherwise sets new controls and renders them
+            return
+        } else {
+            showConnectors(activeObject) // set new controls and disable the original controls
+            canvas.renderAll()
+        }
+        canvas.on('mouse:up', function (options) {
+            if (options.target == null) {
+                resetConnectors(activeObject)
+                canvas.requestRenderAll()
+            }
+            //resets the controls to get back the original sized ones
+
+        })
     }
 
     return (
