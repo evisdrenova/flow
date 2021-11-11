@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../pages/toolbar.module.css'
 import { fabric } from 'fabric'
+import useEventListener from '@use-it/event-listener'
 
 export default function Toolbar() {
     const [canvas, setCanvas] = useState('')
@@ -16,6 +17,7 @@ export default function Toolbar() {
     //intializes and mounts the canvas
     useEffect(() => {
         setCanvas(initCanvas());
+        window.addEventListener('keydown', downHandler)
     }, []);
     //creates a rectangle and adds it to the canvas
     const createRect = canv => {
@@ -40,22 +42,30 @@ export default function Toolbar() {
                 radius: 30,
                 fill: '#f55',
                 top: 100,
-                left: 100
+                left: 100,
+                cornerColor: 'blue',
+                cornerStyle: 'rect',
+                transparentCorners: false
             });
         canv.add(circle)
+        resetConnectors(circle)
     }
     //creates a line and adds it to the canvas
-    const createLine = points => {
+    const createLine = canv => {
         const line = new fabric.Line(
-            points, //[x-axis,y-axis, length, rotation]
+            [200, 100, 50, 150], //[x-axis,y-axis, length, rotation]
             {
                 fill: 'red',
                 stroke: 'red',
                 strokeWidth: 5,
                 originX: 'center',
-                originY: 'center'
+                originY: 'center',
+                cornerColor: 'blue',
+                cornerStyle: 'rect',
+                transparentCorners: false
             })
-        return line
+        canvas.add(line)
+        resetConnectors(line)
 
     }
     //defines and positions the connection controls
@@ -166,6 +176,16 @@ export default function Toolbar() {
                 console.log('Couldn\'t recognize direction')
         }
     }
+    //takes an object and retusn the lineCoords in array[[x,y]] form for each corner
+    const returnArrayoflineCoordsfromObject = (object) => {
+        const points = [
+            [object.lineCoords.bl.x - 10, object.lineCoords.bl.y + 10],
+            [object.lineCoords.br.x + 10, object.lineCoords.br.y + 10],
+            [object.lineCoords.tl.x - 10, object.lineCoords.tl.y - 10],
+            [object.lineCoords.tr.x + 10, object.lineCoords.tr.y - 10]
+        ]
+        return points
+    }
     //returns the center points of the customer connectors to be able to bind the line to the object
     const returnConnectorCenterPoints = (options, connector) => {
 
@@ -195,17 +215,18 @@ export default function Toolbar() {
 
     }
     //draws the line originating from the center of the connector box
-    const drawLineFromConnector = connectorCenterPoints => {
+    const drawLineFromConnector = points => {
 
         const connectionLine = new fabric.Line(
-            connectorCenterPoints,
+            points,
             {
                 fill: 'red',
                 stroke: 'red',
-                strokeWidth: 5,
+                strokeWidth: 3,
                 originX: 'center',
                 originY: 'center'
             })
+
         return connectionLine
     }
     //returns the corner's coords needed to draw the line that the user selected
@@ -303,27 +324,52 @@ export default function Toolbar() {
     const updateLineCoordsWhenObjectScales = () => {
 
     }
+    //TODO:finish up the delete function
+    const downHandler = (activeObject) => {
 
-    //draws the connction line
+        if (event.keyCode === 8) {
+            console.log('button pressed')
+            const activeObject = canvas.getActiveObject()
+            console.log(activeObject)
+
+            //canvas.remove(canvas.getActiveObject())
+
+        }
+    }
+    //connects end of line to another object and keeps them connected
+    const connectToObject = () => {
+
+    }
+
+
+    //draws the connection line
     const drawConnection = () => {
 
         let isDown = true
-        const activeObject = canvas.getActiveObject() //sets the active object
+        const activeObject = canvas.getActiveObject()
         const rect_corners = activeObject.calcCoords()
-        const cornerSelected = returnConnectorSelected(activeObject) // gets the coords of the corner that was selected
-        let connectionLine = createLine(cornerSelected.points) //returns a connectionLine that was drawn 
+        const cornerSelected = returnConnectorSelected(activeObject)
+        let connectionLine = drawLineFromConnector(cornerSelected.points)
+        let allCanvasObjects = canvas.getObjects()
+        console.log('all canvas objects', allCanvasObjects)
 
         canvas.on('mouse:move', function (options) {
             //whenever the mouse moves, update the end of the line coords to be the mouse pointer coords
             if (!isDown) return;
             canvas.add(connectionLine)
             var pointers = canvas.getPointer(options.e);
+            var pointersXY = [pointers.x, pointers.y]
+           // if line end interescts with another object then connect to i
+            
+           
             connectionLine.set({ x2: pointers.x, y2: pointers.y });
         })
 
         canvas.on('mouse:up', function (options) {
             //maintains the lines but reset the controls to get back the original sized ones
             isDown = false
+            var pointers = canvas.getPointer(options.e);
+            console.log(pointers)
             resetConnectors(activeObject)
             canvas.requestRenderAll()
         })
@@ -337,22 +383,30 @@ export default function Toolbar() {
             canvas.requestRenderAll()
         })
     }
-    //handles the connection logic that shows the connectors
-    const createConnection = (canv, options) => {
-        const activeObject = canvas.getActiveObject()
-        if (activeObject == null) { //checks if the user has selected anything and if not returns, otherwise sets new controls and renders them
-            return
-        } else {
-            showConnectors(activeObject) // set new controls and disable the original controls
-            canvas.renderAll()
-        }
-        canvas.on('mouse:up', function (options) {
-            if (options.target == null) {
-                resetConnectors(activeObject)
-                canvas.requestRenderAll()
-            }
-            //resets the controls to get back the original sized ones
 
+    //handles the connection logic that shows the connectors on hover
+    const renderConnection = () => {
+        let activateHover = true
+        canvas.on('mouse:over', function (options) {
+            if (!activateHover) return;
+            let hoveredObject = options.target
+            if (hoveredObject == null) {
+                return
+            } else {
+                showConnectors(hoveredObject)
+                canvas.setActiveObject(hoveredObject)
+                canvas.renderAll()
+            }
+        })
+        canvas.on('mouse:down', function (options) {
+            if (options.target == null) {
+                const allObjects = canvas.getObjects()
+                for (var i = 0; i < allObjects.length; i++) {
+                    resetConnectors(allObjects[i])
+                }
+                activateHover = false
+                canvas.renderAll()
+            }
         })
     }
 
@@ -369,7 +423,7 @@ export default function Toolbar() {
                     <button id='lineButton' type='button' onClick={() => createLine(canvas)}>Line</button>
                 </div>
                 <div id='connectionButton' className={styles.button}>
-                    <button id='connectionButton' type='button' onClick={() => createConnection(canvas)}>Connection</button>
+                    <button id='connectionButton' type='button' onClick={() => renderConnection()}>Connection</button>
                 </div>
             </div>
             <div>
