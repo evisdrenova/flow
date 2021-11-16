@@ -176,6 +176,44 @@ export default function Toolbar() {
                 console.log('Couldn\'t recognize direction')
         }
     }
+    //returns the connector with expanded bounds around it 
+    const returnCornerExpandedCorners = (activeObject) => {
+        let rightConnectorCorners = [
+            [activeObject.oCoords.rightConnection.corner.bl.x - 10, activeObject.oCoords.rightConnection.corner.bl.y + 10],
+            [activeObject.oCoords.rightConnection.corner.br.x + 10, activeObject.oCoords.rightConnection.corner.br.y + 10],
+            [activeObject.oCoords.rightConnection.corner.tl.x - 10, activeObject.oCoords.rightConnection.corner.tl.y - 10],
+            [activeObject.oCoords.rightConnection.corner.tr.x + 10, activeObject.oCoords.rightConnection.corner.tr.y - 10]
+        ]
+        let leftConnectorCorners = [
+            [activeObject.oCoords.leftConnection.corner.bl.x - 10, activeObject.oCoords.leftConnection.corner.bl.y + 10],
+            [activeObject.oCoords.leftConnection.corner.br.x + 10, activeObject.oCoords.leftConnection.corner.br.y + 10],
+            [activeObject.oCoords.leftConnection.corner.tl.x - 10, activeObject.oCoords.leftConnection.corner.tl.y - 10],
+            [activeObject.oCoords.leftConnection.corner.tr.x + 10, activeObject.oCoords.leftConnection.corner.tr.y - 10]
+        ]
+
+        let topConnectorCorners = [
+            [activeObject.oCoords.topConnection.corner.bl.x - 10, activeObject.oCoords.topConnection.corner.bl.y + 10],
+            [activeObject.oCoords.topConnection.corner.br.x + 10, activeObject.oCoords.topConnection.corner.br.y + 10],
+            [activeObject.oCoords.topConnection.corner.tl.x - 10, activeObject.oCoords.topConnection.corner.tl.y - 10],
+            [activeObject.oCoords.topConnection.corner.tr.x + 10, activeObject.oCoords.topConnection.corner.tr.y - 10]
+        ]
+
+        let bottomConnectorCorners = [
+            [activeObject.oCoords.bottomConnection.corner.bl.x - 10, activeObject.oCoords.bottomConnection.corner.bl.y + 10],
+            [activeObject.oCoords.bottomConnection.corner.br.x + 10, activeObject.oCoords.bottomConnection.corner.br.y + 10],
+            [activeObject.oCoords.bottomConnection.corner.tl.x - 10, activeObject.oCoords.bottomConnection.corner.tl.y - 10],
+            [activeObject.oCoords.bottomConnection.corner.tr.x + 10, activeObject.oCoords.bottomConnection.corner.tr.y - 10]
+        ]
+
+        const cornerObjects = {
+            rightConnector: rightConnectorCorners,
+            leftConnector: leftConnectorCorners,
+            topConnector: topConnectorCorners,
+            bottomConnector: bottomConnectorCorners
+        }
+
+        return cornerObjects
+    }
     //takes an object and retusn the lineCoords in array[[x,y]] form for each corner
     const returnArrayoflineCoordsfromObject = (object) => {
         const points = [
@@ -231,8 +269,8 @@ export default function Toolbar() {
     }
     //returns the corner's coords needed to draw the line that the user selected
     const returnConnectorSelected = activeObject => {
-        const objectSelected = activeObject.__corner
 
+        const objectSelected = activeObject.__corner
         let mainCoords = activeObject.calcCoords()
 
         let rightConnectorCenterPoints2 = [mainCoords.rightConnection.x, mainCoords.rightConnection.y, mainCoords.rightConnection.x, mainCoords.rightConnection.y]
@@ -300,6 +338,8 @@ export default function Toolbar() {
             topConnection: true,
             bottomConnection: true
         })
+
+
     }
     //resets the customer connectors to the original connections
     const resetConnectors = activeObject => {
@@ -337,8 +377,30 @@ export default function Toolbar() {
         }
     }
     //connects end of line to another object and keeps them connected
-    const connectToObject = () => {
+    const connectToObject = (activeObject) => {
+        const cornerSelected = returnConnectorSelected(activeObject)
 
+        connectorCenterCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
+            let connectorCenterCoordsX = connectorCenterCoords[0]
+            let connectorCenterCoordsY = connectorCenterCoords[1]
+            connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
+            canvas.renderAll()
+        
+    }
+
+    const returnSideIntersected = (activeObject) => {
+
+        // let leftSide = [activeObject.lineCoords.bl, activeObject.lineCoords.tl]
+        // let rightSide = [activeObject.lineCoords.br, activeObject.lineCoords.tr]
+        // let topSide = [activeObject.lineCoords.tl, activeObject.lineCoords.tr]
+        // let bottomSide = [activeObject.lineCoords.bl, activeObject.lineCoords.br]
+
+        let leftTop = {x:activeObject.lineCoords.tl.x-5,y:activeObject.lineCoords.tl.y}
+        let leftBottom = {x:activeObject.lineCoords.bl.x+5,y:activeObject.lineCoords.bl.y}
+
+        let leftObject = {leftTop, leftBottom}
+
+        return leftObject
     }
 
 
@@ -347,40 +409,51 @@ export default function Toolbar() {
 
         let isDown = true
         const activeObject = canvas.getActiveObject()
-        const rect_corners = activeObject.calcCoords()
         const cornerSelected = returnConnectorSelected(activeObject)
         let connectionLine = drawLineFromConnector(cornerSelected.points)
         let allCanvasObjects = canvas.getObjects()
-        console.log('all canvas objects', allCanvasObjects)
+        console.log('all canvas objs', allCanvasObjects)
 
+        //update the end of the line coords to be the mouse pointer coords
         canvas.on('mouse:move', function (options) {
-            //whenever the mouse moves, update the end of the line coords to be the mouse pointer coords
             if (!isDown) return;
             canvas.add(connectionLine)
             var pointers = canvas.getPointer(options.e);
-            var pointersXY = [pointers.x, pointers.y]
-           // if line end interescts with another object then connect to i
-            
-           
+            allCanvasObjects.forEach(element => {
+                if (element.containsPoint(pointers)) { 
+                    canvas.setActiveObject(element)
+                    showConnectors(element)
+                    //console.log('this is the active object',element)
+                    let pointerX = pointers.x
+                    let pointY = pointers.y
+                    let tl = element.oCoords.leftConnection
+                    let br = element.oCoords.leftConnection
+                    console.log('tl:',tl,'br:', br)
+                    //console.log(returnCornerExpandedCorners(element).leftConnector)
+                    //console.log(expandedCorners)
+
+                    //TODO: determine which side of the object the line intersects and then snap to the middle of the connector on that side
+
+                  
+
+                }
+            });
             connectionLine.set({ x2: pointers.x, y2: pointers.y });
         })
-
+        //maintains the lines but resets the controls
         canvas.on('mouse:up', function (options) {
-            //maintains the lines but reset the controls to get back the original sized ones
             isDown = false
-            var pointers = canvas.getPointer(options.e);
-            console.log(pointers)
             resetConnectors(activeObject)
             canvas.requestRenderAll()
         })
 
-        //everytime the object moves it updates the beginning of the line's coordinates so it sticks to the center of the connector
+        //updates the line (x1,y1) so it sticks to the center of the connector
         canvas.on('object:moving', function (options) {
             const connectorCenterCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
             let connectorCenterCoordsX = connectorCenterCoords[0]
             let connectorCenterCoordsY = connectorCenterCoords[1]
             connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
-            canvas.requestRenderAll()
+            canvas.renderAll()
         })
     }
 
@@ -401,9 +474,9 @@ export default function Toolbar() {
         canvas.on('mouse:down', function (options) {
             if (options.target == null) {
                 const allObjects = canvas.getObjects()
-                for (var i = 0; i < allObjects.length; i++) {
-                    resetConnectors(allObjects[i])
-                }
+                allObjects.forEach(element => {
+                    resetConnectors(element)
+                })
                 activateHover = false
                 canvas.renderAll()
             }
