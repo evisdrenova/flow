@@ -423,15 +423,16 @@ export default function Toolbar() {
 
         return connectionsArray
     }
-
+    //determines if pointer is over the connector and sets the active objet
     const pointerOverConnection = (pointers, parsedArray) =>{
-        
+
         parsedArray.forEach( element => {
             const conn = element.connections
             for(var coords in conn){
                 if(pointInRect(pointers, conn[coords])){
-                    console.log('pointer is over a connector')
+                    console.log('pointer is over', coords, 'connector, with', conn[coords], 'coords')
                     canvas.setActiveObject(element.object)
+                    return true
                 } else{
                     canvas.setActiveObject
                 } 
@@ -448,8 +449,6 @@ export default function Toolbar() {
         let connectionLine = drawLineFromConnector(cornerSelected.points)
         let allCanvasObjects = canvas.getObjects()
 
-        console.log('all canvas objects', allCanvasObjects)
-
         let parsedConnectionsArray = parseAllCanvasObjects(allCanvasObjects)
 
         //checks if the pointer is over any of the connectors
@@ -457,22 +456,12 @@ export default function Toolbar() {
             if (!isDown) return;
             canvas.add(connectionLine)
             var pointers = canvas.getPointer(options.e);
-
-            pointerOverConnection(pointers, parsedConnectionsArray)
-
-            // parsedConnectionsArray.forEach( element => {
-            //     const conn = element.connections
-            //     for(var coords in conn){
-            //         if(pointInRect(pointers, conn[coords])){
-            //             console.log('pointer is over a connector')
-            //             canvas.setActiveObject(element.object)
-            //         } else{
-            //             canvas.setActiveObject
-            //         } 
-            //     }
-            // })
+            if(pointerOverConnection(pointers, parsedConnectionsArray) == true ){
+               console.log('parsed connections array',parsedConnectionsArray) 
+            }
             connectionLine.set({ x2: pointers.x, y2: pointers.y });//update the end of the line coords to be the mouse pointer coords
         })
+
         //maintains the lines but resets the controls
         canvas.on('mouse:up', function (options) {
             isDown = false
