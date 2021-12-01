@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../pages/toolbar.module.css'
 import { fabric } from 'fabric'
-import useEventListener from '@use-it/event-listener'
 
 export default function Toolbar() {
     const [canvas, setCanvas] = useState('')
@@ -30,7 +29,7 @@ export default function Toolbar() {
             fill: 'yellow',
             cornerColor: 'blue',
             cornerStyle: 'rect',
-            transparentCorners: false,
+            transparentCorners: false
         });
         canv.add(rect);
         resetConnectors(rect)
@@ -114,22 +113,25 @@ export default function Toolbar() {
         return { topConnection, bottomConnection, rightConnection, leftConnection }
 
     }
-    //checks if the pointer is in the range of the connector coords box
-    const inRange = (point, polygon) => {
+    //checks if the pointer is in the rectangle
+    const pointInRect = (point, rect) => {
 
-        var x = point[0], y = point[1];
+        let x1 = rect.bl.x
+        let y1 = rect.bl.y
+        let x2 = rect.tr.x
+        let y2 = rect.tr.y
 
-        var inside = false;
-        for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-            var xi = polygon[i][0], yi = polygon[i][1];
-            var xj = polygon[j][0], yj = polygon[j][1];
+        //console.log('x1:',x1,'x2:',x2,'y1:',y1,'y2:',y2)
 
-            var intersect = ((yi > y) != (yj > y))
-                && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
+        let pointerX = point.x
+        let pointerY = point.y
+        //console.log('pointerX:', pointerX, 'pointerY:',pointerY)
+
+        if (pointerX > x1 && pointerX < x2 && pointerY < y1 && pointerY > y2) {
+            return true;
+        } else {
+            return false;
         }
-
-        return inside;
     }
     //goes through options object and returns just the corners and expands the corners to account from more flexiblity in where the user picks 
     const normalizeBorderPoints = (options, connector) => {
@@ -381,11 +383,11 @@ export default function Toolbar() {
         const cornerSelected = returnConnectorSelected(activeObject)
 
         connectorCenterCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
-            let connectorCenterCoordsX = connectorCenterCoords[0]
-            let connectorCenterCoordsY = connectorCenterCoords[1]
-            connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
-            canvas.renderAll()
-        
+        let connectorCenterCoordsX = connectorCenterCoords[0]
+        let connectorCenterCoordsY = connectorCenterCoords[1]
+        connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
+        canvas.renderAll()
+
     }
 
     const returnSideIntersected = (activeObject) => {
@@ -395,14 +397,47 @@ export default function Toolbar() {
         // let topSide = [activeObject.lineCoords.tl, activeObject.lineCoords.tr]
         // let bottomSide = [activeObject.lineCoords.bl, activeObject.lineCoords.br]
 
-        let leftTop = {x:activeObject.lineCoords.tl.x-5,y:activeObject.lineCoords.tl.y}
-        let leftBottom = {x:activeObject.lineCoords.bl.x+5,y:activeObject.lineCoords.bl.y}
+        let leftTop = { x: activeObject.lineCoords.tl.x - 5, y: activeObject.lineCoords.tl.y }
+        let leftBottom = { x: activeObject.lineCoords.bl.x + 5, y: activeObject.lineCoords.bl.y }
 
-        let leftObject = {leftTop, leftBottom}
+        let leftObject = { leftTop, leftBottom }
 
         return leftObject
     }
+    //parses allCanvas objects and returns a simplified array of connections and objects
+    const parseAllCanvasObjects = (allCanvasObjects) => {
+        let connectionsArray = []
 
+        allCanvasObjects.forEach(element => {
+            let connectionObject = {
+                object: element,
+                connections: {
+                    leftConnection: element.oCoords.leftConnection.touchCorner,
+                    rightConnection: element.oCoords.rightConnection.touchCorner,
+                    bottomConnection: element.oCoords.bottomConnection.touchCorner,
+                    topConnection: element.oCoords.topConnection.touchCorner
+                }
+            }
+            connectionsArray.push(connectionObject)
+        })
+
+        return connectionsArray
+    }
+
+    const pointerOverConnection = (pointers, parsedArray) =>{
+        
+        parsedArray.forEach( element => {
+            const conn = element.connections
+            for(var coords in conn){
+                if(pointInRect(pointers, conn[coords])){
+                    console.log('pointer is over a connector')
+                    canvas.setActiveObject(element.object)
+                } else{
+                    canvas.setActiveObject
+                } 
+            }
+        })
+    }
 
     //draws the connection line
     const drawConnection = () => {
@@ -412,33 +447,31 @@ export default function Toolbar() {
         const cornerSelected = returnConnectorSelected(activeObject)
         let connectionLine = drawLineFromConnector(cornerSelected.points)
         let allCanvasObjects = canvas.getObjects()
-        console.log('all canvas objs', allCanvasObjects)
 
-        //update the end of the line coords to be the mouse pointer coords
+        console.log('all canvas objects', allCanvasObjects)
+
+        let parsedConnectionsArray = parseAllCanvasObjects(allCanvasObjects)
+
+        //checks if the pointer is over any of the connectors
         canvas.on('mouse:move', function (options) {
             if (!isDown) return;
             canvas.add(connectionLine)
             var pointers = canvas.getPointer(options.e);
-            allCanvasObjects.forEach(element => {
-                if (element.containsPoint(pointers)) { 
-                    canvas.setActiveObject(element)
-                    showConnectors(element)
-                    //console.log('this is the active object',element)
-                    let pointerX = pointers.x
-                    let pointY = pointers.y
-                    let tl = element.oCoords.leftConnection
-                    let br = element.oCoords.leftConnection
-                    console.log('tl:',tl,'br:', br)
-                    //console.log(returnCornerExpandedCorners(element).leftConnector)
-                    //console.log(expandedCorners)
 
-                    //TODO: determine which side of the object the line intersects and then snap to the middle of the connector on that side
+            pointerOverConnection(pointers, parsedConnectionsArray)
 
-                  
-
-                }
-            });
-            connectionLine.set({ x2: pointers.x, y2: pointers.y });
+            // parsedConnectionsArray.forEach( element => {
+            //     const conn = element.connections
+            //     for(var coords in conn){
+            //         if(pointInRect(pointers, conn[coords])){
+            //             console.log('pointer is over a connector')
+            //             canvas.setActiveObject(element.object)
+            //         } else{
+            //             canvas.setActiveObject
+            //         } 
+            //     }
+            // })
+            connectionLine.set({ x2: pointers.x, y2: pointers.y });//update the end of the line coords to be the mouse pointer coords
         })
         //maintains the lines but resets the controls
         canvas.on('mouse:up', function (options) {
