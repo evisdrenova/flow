@@ -340,8 +340,6 @@ export default function Toolbar() {
             topConnection: true,
             bottomConnection: true
         })
-
-
     }
     //resets the customer connectors to the original connections
     const resetConnectors = activeObject => {
@@ -362,10 +360,6 @@ export default function Toolbar() {
             bottomConnection: false
         })
     }
-    //TODO: updates the insertion coordinates for the lines when the user scales the shapes
-    const updateLineCoordsWhenObjectScales = () => {
-
-    }
     //TODO:finish up the delete function
     const downHandler = (activeObject) => {
 
@@ -378,36 +372,10 @@ export default function Toolbar() {
 
         }
     }
-    //connects end of line to another object and keeps them connected
-    const connectToObject = (activeObject) => {
-        const cornerSelected = returnConnectorSelected(activeObject)
-
-        connectorCenterCoords = returnConnectorCenterPoints(options, cornerSelected.corner)
-        let connectorCenterCoordsX = connectorCenterCoords[0]
-        let connectorCenterCoordsY = connectorCenterCoords[1]
-        connectionLine.set({ x1: connectorCenterCoordsX, y1: connectorCenterCoordsY })
-        canvas.renderAll()
-
-    }
-
-    const returnSideIntersected = (activeObject) => {
-
-        // let leftSide = [activeObject.lineCoords.bl, activeObject.lineCoords.tl]
-        // let rightSide = [activeObject.lineCoords.br, activeObject.lineCoords.tr]
-        // let topSide = [activeObject.lineCoords.tl, activeObject.lineCoords.tr]
-        // let bottomSide = [activeObject.lineCoords.bl, activeObject.lineCoords.br]
-
-        let leftTop = { x: activeObject.lineCoords.tl.x - 5, y: activeObject.lineCoords.tl.y }
-        let leftBottom = { x: activeObject.lineCoords.bl.x + 5, y: activeObject.lineCoords.bl.y }
-
-        let leftObject = { leftTop, leftBottom }
-
-        return leftObject
-    }
     //parses allCanvas objects and returns a simplified array of connections and objects
     const parseAllCanvasObjects = (allCanvasObjects) => {
         let connectionsArray = []
-
+        //console.log('allcanvasobjects',allCanvasObjects)
         allCanvasObjects.forEach(element => {
             let connectionObject = {
                 object: element,
@@ -461,7 +429,7 @@ export default function Toolbar() {
             if (!isDown) return;
             canvas.add(connectionLine)
             var pointers = canvas.getPointer(options.e)
-            
+
             let connectorCoords = pointerOverConnection(pointers, parsedConnectionsArray)
             console.log('connector coords', connectorCoords)
 
@@ -496,8 +464,21 @@ export default function Toolbar() {
     }
 
     //handles the connection logic that shows the connectors on hover
+
+    //TODO: fix the function below so that i don't have to hover over both objects in order for the line connection
+    //to work 
     const renderConnection = () => {
         let activateHover = true
+
+        let allObjects = canvas.getObjects()
+        console.log('all objects', allObjects)
+
+        allObjects.forEach(element => {
+            showConnectors(element)
+            canvas.setActiveObject(element)
+            canvas.renderAll()
+        })
+
         canvas.on('mouse:over', function (options) {
             if (!activateHover) return;
             let hoveredObject = options.target
